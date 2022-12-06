@@ -5,17 +5,23 @@ steam_path = None
 dedicated_server_log = None
 argument = None
 home = expanduser("~")
-proton_compat_data = "/Steam/steamapps/compatdata/230410/pfx"
-proton_bin = "/Steam/steamapps/common"
+proton_compat_data = "/steamapps/compatdata/230410/pfx"
+proton_bin = "/steamapps/common"
 warframe = "/drive_c/users/steamuser/AppData/Local/Warframe"
-warframe_exe = "/Steam/steamapps/common/Warframe/Warframe.x64.exe"
+warframe_exe = "/steamapps/common/Warframe/Warframe.x64.exe"
 # get steam dir with Warframe compat files from known possible locations
-if exists(home + "/.steam" + proton_compat_data + warframe):
-    steam_path = home + "/.steam"
-elif exists(home + "/.local/share" + proton_compat_data + warframe):
-    steam_path = home + "/.local/share"
-elif exists(home + "/.var/app/com.valvesoftware.Steam/.local/share" + proton_compat_data + warframe):
-    steam_path = home + "/.var/app/com.valvesoftware.Steam/.local/share"
+if exists(home + "/.steam/steam" + proton_compat_data + warframe):
+    steam_path = home + "/.steam/steam"
+elif exists(home + "/.local/share/steam" + proton_compat_data + warframe):
+    steam_path = home + "/.local/share/steam"
+elif exists(home + "/.var/app/com.valvesoftware.Steam/.local/share/steam" + proton_compat_data + warframe):
+    steam_path = home + "/.var/app/com.valvesoftware.Steam/.local/share/steam"
+elif exists(home + "/.steam/Steam" + proton_compat_data + warframe):
+    steam_path = home + "/.steam/Steam"
+elif exists(home + "/.local/share/Steam" + proton_compat_data + warframe):
+    steam_path = home + "/.local/share/Steam"
+elif exists(home + "/.var/app/com.valvesoftware.Steam/.local/share/Steam" + proton_compat_data + warframe):
+    steam_path = home + "/.var/app/com.valvesoftware.Steam/.local/share/Steam"
 # if valid directory was found get dedicated server output and proton version
 if steam_path is not None:
     if len(sys.argv) > 1:
