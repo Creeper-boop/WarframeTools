@@ -1,6 +1,6 @@
 # Warframe Tools 
 
-Various miscellaneous tools created to aid people with random things
+Various miscellaneous tools created to aid people with random Warframe related things
 
 ### NO DATAMINING TOOLS WILL EVER BE PUBLISHED HERE AS THEY ARE AGAINST WARFRAME TERMS OF SERVICE
 
