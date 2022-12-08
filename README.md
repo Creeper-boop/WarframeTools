@@ -11,16 +11,15 @@ Various miscellaneous tools created to aid people with random Warframe related t
 
 ## Scripts
 
-### GenWarframeServerLauncher.py
+### WarframeServerLauncher.py
 
 #### This script supports only steam Warframe for now
 
-Generates shell file that starts Warframe conclave server.  
 The server settings applied are last settings used before starting the script.
 
 #### usage
 
-    python GenWarframeServerLauncher.py [Proton version]
+    python WarframeServerLauncher.py [Proton version]
 
 #### arguments
 
