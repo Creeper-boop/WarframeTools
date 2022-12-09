@@ -1,17 +1,36 @@
 import os
 import sys
 import subprocess
+import time
 from os.path import exists, expanduser
 
 steam_path = None
 dedicated_server_log = None
-argument = None
+server_instances = 1
+arguments = sys.argv
+proton_version = "Experimental"
 home = expanduser("~")
 proton_compat_data = "/steamapps/compatdata/230410"
 proton_bin = "/steamapps/common"
 warframe_compat = "/pfx/drive_c/users/steamuser/AppData/Local/Warframe"
 warframe_files = "/steamapps/common/Warframe"
 log = open("ServerLauncher.log", "w")
+
+# get launcher arguments
+try:
+    proton_version = arguments[arguments.index("--proton") + 1].strip()
+    print("Specific proton version requested!")
+except ValueError:
+    print("No proton version specified using Proton - Experimental!")
+
+try:
+    server_instances = int(arguments[arguments.index("--multi") + 1].strip())
+    print("Multiple instances requested!")
+except ValueError:
+    print("Instance number not specified defaulting to 1 instance!")
+
+log.write("Using proton: " + proton_version + "\nRunning: " + str(server_instances) + " instances\n")
+
 # get steam dir with Warframe compat files from known possible locations
 if exists(home + "/.steam/steam" + proton_compat_data + warframe_compat):
     steam_path = home + "/.steam/steam"
@@ -26,23 +45,17 @@ elif exists(home + "/.local/share/Steam" + proton_compat_data + warframe_compat)
 elif exists(home + "/.var/app/com.valvesoftware.Steam/.local/share/Steam" + proton_compat_data + warframe_compat):
     steam_path = home + "/.var/app/com.valvesoftware.Steam/.local/share/Steam"
 
-# if valid directory was found get dedicated server output and proton version
+# if valid directory was found get dedicated server output
 if steam_path is not None:
     log.write("Steam: " + steam_path + "\n")
-    if len(sys.argv) > 1:
-        print("Specific proton version requested!")
-        argument = sys.argv[1].strip()
-    else:
-        print("No proton version specified using Proton - Experimental")
-        argument = "Experimental"
 
     # get proton warframe files
     if exists(steam_path + proton_compat_data + warframe_compat):
         print("Found steam proton Warframe files: " + steam_path + proton_compat_data + warframe_compat)
-        log.write("ProtonWF: " + steam_path + proton_compat_data + warframe_compat + "\n")
+        log.write("Warframe compatibility files: " + steam_path + proton_compat_data + warframe_compat + "\n")
         if exists(steam_path + proton_compat_data + warframe_compat + "/DedicatedServer.log"):
             dedicated_server_log = open(steam_path + proton_compat_data + warframe_compat + "/DedicatedServer.log", "r")
-            log.write("DedicatedServerLog: " + steam_path + proton_compat_data + warframe_compat
+            log.write("Dedicated server log: " + steam_path + proton_compat_data + warframe_compat
                       + "/DedicatedServer.log" + "\n")
         else:
             print("Warframe dedicated server has to be run at least once through steam for this script to work!")
@@ -56,34 +69,36 @@ else:
     exit(0)
 
 # get proton files
-if argument == "Experimental":
-    if exists(steam_path + proton_bin + "/Proton - " + argument):
-        proton_bin = steam_path + proton_bin + "/Proton\\ -\\ " + argument + "/proton"
+if proton_version == "Experimental":
+    if exists(steam_path + proton_bin + "/Proton - " + proton_version):
+        proton_bin = steam_path + proton_bin + "/Proton\\ -\\ " + proton_version + "/proton"
     else:
-        print("Requested proton version: Proton - " + argument + " does not exist!")
+        print("Requested proton version: Proton - " + proton_version + " does not exist!")
         exit(0)
 else:
-    if exists(steam_path + proton_bin + "/Proton " + argument):
-        proton_bin = steam_path + proton_bin + "/Proton\\ " + argument + "/proton"
+    if exists(steam_path + proton_bin + "/Proton " + proton_version):
+        proton_bin = steam_path + proton_bin + "/Proton\\ " + proton_version + "/proton"
     else:
-        print("Requested proton version: Proton " + argument + " does not exist!")
+        print("Requested proton version: Proton " + proton_version + " does not exist!")
         exit(0)
 print("Found proton location: " + proton_bin)
-log.write("ProtonLocation: " + proton_bin + "\n")
+log.write("Proton location: " + proton_bin + "\n")
 
 # dedicated server outputs its cmd arguments as the first line of log output
 last_used_arguments = dedicated_server_log.readline().split("Process Command-line:")[1].strip().split("-override:{")
-log.write("ServerArguments: " + "-override:{".join(last_used_arguments) + "\n")
+dedicated_server_log.close()
+log.write("Server arguments: " + "-override:{".join(last_used_arguments) + "\n")
 server_arguments = last_used_arguments[0].split()
 print("Harvested arguments: " + str(server_arguments)[1:-1])
 
 # set dedicated server settings
+with open(steam_path + proton_compat_data + warframe_compat + "/DS.cfg", "r") as config:
+    dedicated_server_config = config.readlines()
+    log.write("==UsingConfig==\n" + " ".join(dedicated_server_config) + "==EndConfig==\n")
+
 if len(last_used_arguments) > 1:
     overrides = last_used_arguments[1].replace("\"", "").replace(":", "=").replace("false", "0")\
         .replace("disabled", "0").replace("true", "1").replace("enabled", "1").replace("}", "").split(",")
-    with open(steam_path + proton_compat_data + warframe_compat + "/DS.cfg", "r") as config:
-        dedicated_server_config = config.readlines()
-        log.write("==UsingConfig==\n" + " ".join(dedicated_server_config) + "==EndConfig==\n")
 
     try:
         launcher_settings = \
@@ -95,7 +110,7 @@ if len(last_used_arguments) > 1:
     if launcher_settings is not None:
         dedicated_server_config = dedicated_server_config[:launcher_settings + 1]
 
-    log.write("ApplyingOverrides: " + " ".join(overrides) + "\n")
+    log.write("Applying overrides: " + " ".join(overrides) + "\n")
     for line in overrides:
         dedicated_server_config.append(line + "\n")
 
@@ -104,8 +119,6 @@ if len(last_used_arguments) > 1:
         config.writelines(dedicated_server_config)
         log.write("Written: " + steam_path + proton_compat_data + warframe_compat + "/DS.cfg" + "\n")
 
-    server_arguments.append("-settings:LauncherDedicatedServerSettings")
-
 # set environment variables
 os.environ["STEAM_COMPAT_DATA_PATH"] = steam_path + proton_compat_data
 os.environ["STEAM_COMPAT_CLIENT_INSTALL_PATH"] = steam_path
@@ -113,17 +126,20 @@ print("Environment variables set!")
 # start dedicated server
 print("Starting Warframe dedicated server!")
 os.chdir(steam_path + proton_compat_data + warframe_compat)
-server_command = [proton_bin.replace("\\", ""), "waitforexitandrun", steam_path + warframe_files + "/Warframe.x64.exe"]
-log.write("RunningCommand: " + " ".join(server_command + server_arguments) + "\n")
-server = subprocess.Popen(server_command + server_arguments, stdout=subprocess.PIPE)
+server_command = [proton_bin.replace("\\", ""), "run", steam_path + warframe_files + "/Warframe.x64.exe"]
+server_arguments.pop([server_arguments.index(i) for i in server_arguments if i.startswith("-log:")][0])
+servers = []
+for i in range(server_instances):
+    command = server_command + ["-log:DedicatedServer" + str(i) + ".log", ] + \
+              server_arguments + ["-instance:" + str(i), "-settings:LauncherDedicatedServerSettings"]
+    log.write("Running command: " + " ".join(command) + "\n")
+    servers.append(subprocess.Popen(command))
 
-# output the server output until closed
+# hold process until server closed
 while True:
-    output = server.stdout.readline()
-    print(output.strip())
-    return_code = server.poll()
-    if return_code is not None:
-        for output in server.stdout.readlines():
-            print(output.strip())
-        print("Server exited with exit code: " + str(return_code) + " !")
-        break
+    time.sleep(0.5)
+    for i, server in enumerate(servers):
+        return_code = server.poll()
+        if return_code is not None:
+            print("Server " + str(i) + " exited with exit code: " + str(return_code) + " !")
+            log.write("Server " + str(i) + " exited with exit code: " + str(return_code) + "\n")

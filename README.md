@@ -19,13 +19,14 @@ The server settings applied are last settings used before starting the script.
 
 #### usage
 
-    python WarframeServerLauncher.py [Proton version]
+    python WarframeServerLauncher.py
 
 #### arguments
 
-The script accepts desired proton version as argument:
+> --proton [proton version]
+> - proton version being either "Experimental" or numerical "X.Y"  
+>
+> --multi [no. of instances]  
+> - no. of instances being a positive number between 1 and the amount your machine can handle  
 
-> Experimental for Proton - Experimental  
-> x.x for Proton x.x  
-
-if no arguments are given Proton - Experimental will be used.
+if no arguments are given Proton - Experimental will be used and 1 instance will be run.
