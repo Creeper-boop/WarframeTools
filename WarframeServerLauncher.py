@@ -151,7 +151,8 @@ os.chdir(steam_path + proton_compat_data + warframe_compat)
 servers = []
 if launcher:
     # launcher
-    server_command = [proton_bin.replace("\\", ""), "run", steam_path + warframe_files + "/Tools/Launcher.exe"]
+    server_command = [proton_bin.replace("\\", ""), "waitforexitandrun", steam_path + warframe_files +
+                      "/Tools/Launcher.exe"]
     command = server_command + ["-cluster:public", "-registry:Steam", "-headless"]
     if use_cfg:
         command.append("-dedicated:" + str(server_instances) + ",LauncherDedicatedServerSettings")
@@ -168,7 +169,9 @@ else:
 
     for i in range(server_instances):
         command = server_command + ["-log:DedicatedServer" + str(i) + ".log", ] + \
-                  server_arguments + ["-instance:" + str(i), "-settings:LauncherDedicatedServerSettings"]
+                  server_arguments + ["-instance:" + str(i)]
+        if use_cfg:
+            command.append("-settings:LauncherDedicatedServerSettings")
         log.write("Running command: " + " ".join(command) + "\n")
         servers.append(subprocess.Popen(command))
 
