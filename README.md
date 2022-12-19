@@ -34,5 +34,8 @@ The server settings applied are last settings used before starting the script.
 > 
 > --applet
 > - use warframe applet instead of launcher
+> 
+> --no-update-cfg
+> - disable DS.cfg updates
 
 if no arguments are given Proton - Experimental will be used and 1 instance will be run.
