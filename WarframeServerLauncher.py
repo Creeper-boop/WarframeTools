@@ -2,10 +2,13 @@ import os
 import sys
 import subprocess
 import time
+import atexit
 from os.path import exists, expanduser
 
 steam_path = None
 dedicated_server_log = None
+use_cfg = True
+launcher = True
 server_instances = 1
 arguments = sys.argv
 proton_version = "Experimental"
@@ -29,7 +32,22 @@ try:
 except ValueError:
     print("Instance number not specified defaulting to 1 instance!")
 
-log.write("Using proton: " + proton_version + "\nRunning: " + str(server_instances) + " instances\n")
+try:
+    arguments.index("--no-cfg")
+    use_cfg = False
+    print("Disabled custom config!")
+except ValueError:
+    print("Use of custom config omitted!")
+
+try:
+    arguments.index("--applet")
+    launcher = False
+    print("Using warframe applet!")
+except ValueError:
+    print("Using warframe launcher!")
+
+log.write("Custom config: " + str(use_cfg) + "\nWarframe launcher: " + str(launcher) + "\nUsing proton: " +
+          proton_version + "\nRunning: " + str(server_instances) + " instances\n")
 
 # get steam dir with Warframe compat files from known possible locations
 if exists(home + "/.steam/steam" + proton_compat_data + warframe_compat):
@@ -97,7 +115,7 @@ with open(steam_path + proton_compat_data + warframe_compat + "/DS.cfg", "r") as
     log.write("==UsingConfig==\n" + " ".join(dedicated_server_config) + "==EndConfig==\n")
 
 if len(last_used_arguments) > 1:
-    overrides = last_used_arguments[1].replace("\"", "").replace(":", "=").replace("false", "0")\
+    overrides = last_used_arguments[1].replace("\"", "").replace(":", "=").replace("false", "0") \
         .replace("disabled", "0").replace("true", "1").replace("enabled", "1").replace("}", "").split(",")
 
     try:
@@ -123,23 +141,59 @@ if len(last_used_arguments) > 1:
 os.environ["STEAM_COMPAT_DATA_PATH"] = steam_path + proton_compat_data
 os.environ["STEAM_COMPAT_CLIENT_INSTALL_PATH"] = steam_path
 print("Environment variables set!")
+log.write("Set environ variables: \n    STEAM_COMPAT_DATA_PATH=" + steam_path + proton_compat_data +
+          "\n    STEAM_COMPAT_CLIENT_INSTALL_PATH=" + steam_path + "\n")
+
 # start dedicated server
 print("Starting Warframe dedicated server!")
 os.chdir(steam_path + proton_compat_data + warframe_compat)
-server_command = [proton_bin.replace("\\", ""), "run", steam_path + warframe_files + "/Warframe.x64.exe"]
-server_arguments.pop([server_arguments.index(i) for i in server_arguments if i.startswith("-log:")][0])
-servers = []
-for i in range(server_instances):
-    command = server_command + ["-log:DedicatedServer" + str(i) + ".log", ] + \
-              server_arguments + ["-instance:" + str(i), "-settings:LauncherDedicatedServerSettings"]
-    log.write("Running command: " + " ".join(command) + "\n")
-    servers.append(subprocess.Popen(command))
 
-# hold process until server closed
+servers = []
+if launcher:
+    # launcher
+    server_command = [proton_bin.replace("\\", ""), "run", steam_path + warframe_files + "/Tools/Launcher.exe"]
+    command = server_command + ["-cluster:public", "-registry:Steam", "-headless"]
+    if use_cfg:
+        command.append("-dedicated:" + str(server_instances) + ",LauncherDedicatedServerSettings")
+    else:
+        command.append("-dedicated:" + str(server_instances))
+
+    log.write("Running command: " + " ".join(command) + "\n")
+    launcher = subprocess.Popen(command)
+
+else:
+    # applet
+    server_command = [proton_bin.replace("\\", ""), "run", steam_path + warframe_files + "/Warframe.x64.exe"]
+    server_arguments.pop([server_arguments.index(i) for i in server_arguments if i.startswith("-log:")][0])
+
+    for i in range(server_instances):
+        command = server_command + ["-log:DedicatedServer" + str(i) + ".log", ] + \
+                  server_arguments + ["-instance:" + str(i), "-settings:LauncherDedicatedServerSettings"]
+        log.write("Running command: " + " ".join(command) + "\n")
+        servers.append(subprocess.Popen(command))
+
+
+# create exit calls
+def exit_cleanup():
+    print("Exiting!")
+    log.close()
+
+
+atexit.register(exit_cleanup)
+
+# hold process
 while True:
     time.sleep(0.5)
-    for i, server in enumerate(servers):
-        return_code = server.poll()
+
+    if launcher:
+        return_code = launcher.poll()
         if return_code is not None:
-            print("Server " + str(i) + " exited with exit code: " + str(return_code) + " !")
-            log.write("Server " + str(i) + " exited with exit code: " + str(return_code) + "\n")
+            print("Launcher exited with exit code: " + str(return_code) + " !")
+            log.write("Launcher exited with exit code: " + str(return_code) + "\n")
+
+    else:
+        for i, server in enumerate(servers):
+            return_code = server.poll()
+            if return_code is not None:
+                print("Server " + str(i) + " exited with exit code: " + str(return_code) + " !")
+                log.write("Server " + str(i) + " exited with exit code: " + str(return_code) + "\n")

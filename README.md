@@ -27,6 +27,12 @@ The server settings applied are last settings used before starting the script.
 > - proton version being either "Experimental" or numerical "X.Y"  
 >
 > --multi [no. of instances]  
-> - no. of instances being a positive number between 1 and the amount your machine can handle  
+> - no. of instances being a positive number between 1 and the amount your machine can handle
+> 
+> --no-cfg
+> - disable the use of custom config
+> 
+> --applet
+> - use warframe applet instead of launcher
 
 if no arguments are given Proton - Experimental will be used and 1 instance will be run.
