@@ -9,6 +9,7 @@ steam_path = None
 dedicated_server_log = None
 use_cfg = True
 launcher = True
+update_cfg = True
 server_instances = 1
 arguments = sys.argv
 proton_version = "Experimental"
@@ -46,7 +47,14 @@ try:
 except ValueError:
     print("Using warframe launcher!")
 
-log.write("Custom config: " + str(use_cfg) + "\nWarframe launcher: " + str(launcher) + "\nUsing proton: " +
+try:
+    arguments.index("--no-update-cfg")
+    update_cfg = False
+    print("Not updating config!")
+except ValueError:
+    print("Updating config!")
+
+log.write("Custom config: " + str(use_cfg) + " Updating: " + str(update_cfg) + "\nWarframe launcher: " + str(launcher) + "\nUsing proton: " +
           proton_version + "\nRunning: " + str(server_instances) + " instances\n")
 
 # get steam dir with Warframe compat files from known possible locations
@@ -114,7 +122,7 @@ with open(steam_path + proton_compat_data + warframe_compat + "/DS.cfg", "r") as
     dedicated_server_config = config.readlines()
     log.write("==UsingConfig==\n" + " ".join(dedicated_server_config) + "==EndConfig==\n")
 
-if len(last_used_arguments) > 1:
+if len(last_used_arguments) > 1 & update_cfg:
     overrides = last_used_arguments[1].replace("\"", "").replace(":", "=").replace("false", "0") \
         .replace("disabled", "0").replace("true", "1").replace("enabled", "1").replace("}", "").split(",")
 
